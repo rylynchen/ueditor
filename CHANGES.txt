@@ -1,0 +1,62 @@
+﻿
+----------------------------------------------------------------------------------------
+  file: dialogs/scrawl/scrawl.js
+  line: 48
+change: ?action  ===> &action   (这里最好判断scrawlPath是否包含?号)
+----------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------
+  file: editor_all.js
+  line: 224
+ added: 
+        clone : function(source,target){
+          target = target || {};
+          for(var i in source){
+            if(!target.hasOwnProperty(i)){
+              target[i] = source[i];
+            }
+          }
+          return target;
+        },
+  line: 3505
+change: me.options = utils.extend(utils.clone(options || {}), UEDITOR_CONFIG, true);
+----------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------
+  file: dialogs/image/image.html
+  line: 23
+ added: <button id="imce" onclick="imce()">IMCE</button>
+  
+  line: 165
+ added:
+      function imce() {
+        if(parent.Drupal.settings.ueditor && parent.Drupal.settings.ueditor.imce) {
+          window.open(parent.Drupal.settings.basePath + '?q=imce&app=UEditor|imceload@ueditor_imce','','width=760,height=560,resizable=1');
+        }
+        else {
+          baidu.g( "imce" ).setDisabled( true );
+        }
+      }
+      function ueditor_imce(win) {
+        win.imce.setSendTo('UEditor', ueditor_imce_handler);
+      }
+      function ueditor_imce_handler(file, win) {
+        baidu.g( "url" ).value     = file.url;
+        baidu.g( "width" ).value   = file.width;
+        baidu.g( "height" ).value  = file.height;
+        baidu.g( "border" ).value  = '0';
+        baidu.g( "vhSpace" ).value = '0';
+        $focus( baidu.g( "url" ) );
+        win.close();
+      }
+----------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------
+  file: dialogs/image/image.css
+  line: bottom
+ added:
+      #url {width: 420px;}
+      #imce {width:90px;height:22px;margin-left:3px;cursor:pointer;padding:0;border:1px solid #ccc;background:url("../../themes/default/images/dialog-title-bg.png") repeat scroll 0 bottom #eee;}        
+----------------------------------------------------------------------------------------
+
+

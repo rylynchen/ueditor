@@ -1,0 +1,18 @@
+
+;必须 模块名称
+name = UEditor
+
+;必须 基本描述
+description = Baidu UEditor.
+
+;必须 对应的Drupal版本
+core = 7.x
+
+;必须 模块的分类名
+package = Other
+
+;可选 模块版本
+version = 7.x-1.23-RC1
+
+;可选 配置地址
+configure = admin/config/content/ueditor

@@ -1,0 +1,77 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the ueditor module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function ueditor_schema() {
+  $schema = array();
+  $schema['ueditor_settings'] = array(
+    'fields' => array(
+      'eid' => array(
+        'type'      => 'serial',
+        'unsigned'  => TRUE,
+        'not null'  => TRUE,
+      ),
+      'name' => array(
+        'type'      => 'varchar',
+        'not null'  => TRUE,
+        'default'   => 'Noname',
+        'length'    => 128,
+      ),
+      'setting' => array(
+        'type'      => 'text',
+      ),
+      'weight' => array(
+        'type'      => 'int',
+        'not null'  => TRUE,
+        'default'   => 0,
+      ),
+    ),
+    'primary key' => array('eid'),
+  );
+  $schema['ueditor_formats'] = array(
+    'fields' => array(
+      'eid' => array(
+        'type'      => 'int',
+        'unsigned'  => TRUE,
+        'not null'  => TRUE,
+        'default'   => 0,
+      ),
+      'format' => array(
+        'type'      => 'varchar',
+        'not null'  => TRUE,
+        'default'   => '',
+        'length'    => 128,
+      ),
+    ),
+    'primary key' => array('eid', 'format'),
+  );
+  return $schema;
+}
+
+/**
+ * Implements hook_install().
+ */
+function ueditor_install() {
+  $setting = ueditor_config_default();
+  db_insert('ueditor_settings')
+    ->fields(array(
+      'eid'     => 1,
+      'name'    => 'Default',
+      'setting' => serialize($setting),
+      'weight'  => 0,
+    ))
+    ->execute();
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function ueditor_uninstall() {
+  variable_del('ueditor_global_settings');
+}
