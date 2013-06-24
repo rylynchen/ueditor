@@ -81,20 +81,61 @@ final class ueditor_upload {
     return $this;
   }
   public function needStyle() {
-    $settings = variable_get('ueditor_global_settings', NULL);
+    $settings = variable_get('ueditor_image_settings', NULL);
     $settings = $settings ? unserialize($settings) : NULL;
     $this->settings = $settings;
-    return $settings && isset($settings['imageStyle']) && $settings['imageStyle'];
+    return $settings && isset($settings['styleNeed']);
   }
   public function getStyleImageUrl($url) {
-    $watermark = variable_get('ueditor_imageup_watermark', FALSE);
-    $styleName = $watermark ? $this->settings['imageStyleWatermark'] : $this->settings['imageStyleDefault'];
-    $style = image_style_load($styleName);
+    $style = $this->getWatermarkStyle();
     $styleUrl = 'styles/'.$style['name'].'/'.$url;
     $source_uri = 'public://ueditor/'.$url;
     $target_uri = 'public://ueditor/'.$styleUrl;
     image_style_create_derivative($style, $source_uri, $target_uri);
     return $styleUrl;
+  }
+  public function getWatermarkStyle() {
+    $cfg = ueditor_image_get_user_config();
+    if (!empty($cfg)) {
+      $u_cfg = $cfg;
+      if ($u_cfg['watermarkNeed']) {
+        // 0 is not choose
+        if ($u_cfg['watermarkType'] == 1) {
+          // system
+          $style = image_style_load($u_cfg['watermarkSystem']);
+          if ($style) {
+            return $style;
+          }
+        }
+        else if ($u_cfg['watermarkType'] == 2) {
+          // custom
+          $style = image_style_load($this->settings['watermarkCustomStyleBase']);
+          if ($style) {
+            $x_data = array(0 => 'left', 1 => 'center', 2 => 'right');
+            $y_data = array(0 => 'top', 1 => 'center', 2 => 'bottom-5');
+            $x_align_data = array(0 => 'left', 1 => 'center', 2 => 'right');
+            $y_align_data = array(0 => 'top', 1 => 'center', 2 => 'bottom');
+            $x = $x_data[$u_cfg['watermarkCutomX']];
+            $x_align = $x_align_data[$u_cfg['watermarkCutomX']];
+            $y_align = $y_align_data[$u_cfg['watermarkCutomY']];
+            $y = $y_data[$u_cfg['watermarkCutomY']];
+            $text = empty($u_cfg['watermarkCutomText']) ? $this->settings['watermarkDefaultText'] : $u_cfg['watermarkCutomText'];
+            foreach ($style['effects'] as $key => $val) {
+              if ($val['name'] == 'image_effects_text') {
+                $style['effects'][$key]['data']['xpos'] = $x;
+                $style['effects'][$key]['data']['ypos'] = $y;
+                $style['effects'][$key]['data']['halign'] = $x_align;
+                $style['effects'][$key]['data']['valign'] = $y_align;
+                $style['effects'][$key]['data']['text'] = $text;
+                break;
+              }
+            }
+            return $style;
+          }
+        }
+      }
+    }
+    return image_style_load($this->settings['styleDefault']);
   }
   public function getResult() {
     if ($this->_configs['file_type'] == 'image' && $this->needStyle()) {

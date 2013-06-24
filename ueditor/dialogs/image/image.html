@@ -53,7 +53,12 @@
                 </div>
                 <div id="local" class="panel">
                     <div id="flashContainer"></div>
-                    <div><div id="upload" style="display: none" ></div><div id="watermark_wrapper" style="display: none"><label><input id="watermark" type="checkbox"/><span>水印</span></label></div><div id="duiqi"></div><div id="localFloat"></div></div>
+                    <div>
+                        <div id="upload" style="display: none"></div>
+                        <div id="duiqi"></div>
+                        <div id="localFloat"></div>
+                        <div id="watermark_wrapper" style="display: none"></div>
+                    </div>
                 </div>
                 <div id="imgManager" class="panel">
                     <div id="imageList"><var id="lang_imgLoading"></var></div>
@@ -86,6 +91,46 @@
     <script type="text/javascript" src="image.js"></script>
 
     <script type="text/javascript">
+        var imgaeSettings = parent.Drupal.settings.ueditor.image;
+        var watermarkHtml = '';
+        if (imgaeSettings.watermarkAllowed) {
+            var needHtml = '<div id="watermarkNeedWrapper"><label><input id="watermarkNeed" type="checkbox"/><span>水印</span></label></div>';
+            var typeHtml = '<div id="watermarkTypeWrapper" style="display:none;"><ul><li><label><input id="watermarkTypeSystem" name="watermarkType" type="radio" value="1"/><span>系统</span></label></li><li><label><input id="watermarkTypeCustom" name="watermarkType" type="radio" value="2"/><span>自定义</span></label></li></ul></div>';
+            var allowedStyleHtml = '<div id="watermarkAllowedStylesWrapper" style="display:none;"><label>样式</label><select id="watermarkAllowedStyles">';
+            for(var i = 0 ; i < imgaeSettings.settings.watermarkAllowedStyles.length; ++i) {
+                if (imgaeSettings.settings.watermarkAllowedStyles[i] == null) {
+                    break;
+                }
+                allowedStyleHtml += '<option value="'+imgaeSettings.settings.watermarkAllowedStyles[i]+'">'+imgaeSettings.settings.watermarkAllowedStyles[i]+'</option>';
+            }
+            allowedStyleHtml += '</select></div>';
+            var customStyleHtml = '<div id="watermarkCustomStyleWrapper" style="display:none;">';
+            customStyleHtml += '<div><ul>';
+            customStyleHtml += '<li><label>X</label><select id="watermarkCustomStyleX"><option value="2">右</option><option value="1">中</option><option value="0">左</option></select></li>';
+            customStyleHtml += '<li><label>Y</label><select id="watermarkCustomStyleY"><option value="2">下</option><option value="1">中</option><option value="0">上</option></select></li>';
+            customStyleHtml += '</ul></div>';
+            customStyleHtml += '<div><label>文字</label><input type="text" id="watermarkCustomStyleText" /></div>';
+            watermarkHtml = needHtml + typeHtml + allowedStyleHtml + customStyleHtml;
+            baidu.g("watermark_wrapper").innerHTML = watermarkHtml;
+            baidu.g("watermarkNeed").onclick = function () {
+                if (this.checked) {
+                    baidu.g("watermarkTypeWrapper").style.display = "";
+                }
+                else {
+                    baidu.g("watermarkTypeWrapper").style.display = "none";
+                    baidu.g("watermarkAllowedStylesWrapper").style.display = "none";
+                    baidu.g("watermarkCustomStyleWrapper").style.display = "none";
+                }
+            }
+            baidu.g( "watermarkTypeSystem" ).onclick = function () {
+                baidu.g("watermarkAllowedStylesWrapper").style.display = "";
+                baidu.g("watermarkCustomStyleWrapper").style.display = "none";
+            }
+            baidu.g( "watermarkTypeCustom" ).onclick = function () {
+                baidu.g("watermarkAllowedStylesWrapper").style.display = "none";
+                baidu.g("watermarkCustomStyleWrapper").style.display = "";
+            }
+        }
         //全局变量
         var imageUrls = [],          //用于保存从服务器返回的图片信息数组
             selectedImageCount = 0;  //当前已选择的但未上传的图片数量
@@ -96,10 +141,9 @@
             maxImageSideLength:900
         });
         utils.domReady(function(){
-            var imgUpUrl = baidu.g( "watermark" ).checked ? editor.options.imageWaterMarkUrl : editor.options.imageUrl;
             var flashOptions = {
                 container:"flashContainer",                                                    //flash容器id
-                url:imgUpUrl,                                           // 上传处理页面的url地址
+                url:editor.options.imageUrl,                                           // 上传处理页面的url地址
                 ext:'{"param1":"value1", "param2":"value2"}',                                 //可向服务器提交的自定义参数列表
                 fileType:'{"description":"'+lang.fileType+'", "extension":"*.gif;*.jpeg;*.png;*.jpg"}',     //上传文件格式限制
                 flashUrl:'imageUploader.swf',                                                  //上传用的flash组件地址
@@ -124,9 +168,7 @@
                     selectedImageCount += selectFiles.length;
                     if(selectedImageCount) {
                         baidu.g("upload").style.display = "";
-                        if (parent.Drupal.settings.ueditor.imageStyleWatermark == 1) {
-                            baidu.g("watermark_wrapper").style.display = "";
-                        }
+                        baidu.g("watermark_wrapper").style.display = "";
                     }
                     dialog.buttons[0].setDisabled(true); //初始化时置灰确定按钮
                 },

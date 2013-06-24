@@ -71,7 +71,14 @@ td input {
 }
 .msg{margin-left: 5px;}
 
-#watermark_wrapper {float: right;margin: 3px 6px 0 0;line-height: 30px;}
-#watermark_wrapper #watermark {margin-right: 3px;vertical-align: middle;}
+#watermark_wrapper {line-height: 30px;font-size: 12px;}
+#watermark_wrapper div {float: left;margin-left: 3px;}
+#watermark_wrapper #watermarkNeedWrapper span {margin-left: 3px;}
+#watermark_wrapper #watermarkCustomStyleText{width:100px;}
+#watermark_wrapper #watermarkAllowedStyles{width:150px;}
+#watermark_wrapper #watermarkTypeWrapper li {height:20px;line-height: 20px;list-style: none;}
+#watermark_wrapper #watermarkCustomStyleWrapper li {list-style: none;height:20px;line-height: 20px;}
+#watermark_wrapper #watermarkCustomStyleWrapper li select {height:20px;line-height: 20px;font-size: 12px;}
+#watermark_wrapper input[type="checkbox"], #watermark_wrapper input[type="radio"] {vertical-align: middle;}
 #url {width: 420px;}
 #imce {width:90px;height:22px;margin-left:3px;cursor:pointer;padding:0;border:1px solid #ccc;background:url("../../themes/default/images/dialog-title-bg.png") repeat scroll 0 bottom #eee;}

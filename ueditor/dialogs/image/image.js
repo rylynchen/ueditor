@@ -297,13 +297,28 @@ var imageUploader = {};
      */
     function addUploadListener() {
         g( "upload" ).onclick = function () {
-            var checked = g("watermark").checked ? 1 : 0;
+            var cfg = {watermarkNeed:0};
+            var imgaeSettings = parent.Drupal.settings.ueditor.image;
+            if (imgaeSettings.watermarkAllowed) {
+                cfg.watermarkNeed = g( "watermarkNeed" ).checked ? 1 : 0,
+                cfg.watermarkType = 0;
+                if (g( "watermarkTypeSystem" ).checked) {
+                    cfg.watermarkType = 1;
+                }
+                if (g( "watermarkTypeCustom" ).checked) {
+                    cfg.watermarkType = 2;
+                }
+                cfg.watermarkSystem = g( "watermarkAllowedStyles" ).value;
+                cfg.watermarkCutomX = g( "watermarkCustomStyleX" ).value;
+                cfg.watermarkCutomY = g( "watermarkCustomStyleY" ).value;
+                cfg.watermarkCutomText = g( "watermarkCustomStyleText" ).value;
+                g("watermark_wrapper").style.display = "none";
+            }
             this.style.display = "none";
-            g("watermark_wrapper").style.display = "none"
             ajax.request('/ueditor/imageup_watermark', {
                 timeout:100000,
                 action:"post",
-                data:{watermark:checked},
+                data:cfg,
                 dataType:"json",
                 onsuccess:function () {
                     flashObj.upload();

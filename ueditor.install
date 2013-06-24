@@ -51,6 +51,23 @@ function ueditor_schema() {
     ),
     'primary key' => array('eid', 'format'),
   );
+  $schema['ueditor_user_config'] = array(
+    'fields' => array(
+      'uid' => array(
+        'type'      => 'int',
+        'unsigned'  => TRUE,
+        'not null'  => TRUE,
+        'default'   => 0,
+      ),
+      'config' => array(
+        'type' => 'blob',
+        'not null' => TRUE,
+        'size' => 'big',
+        'serialize' => TRUE,
+      ),
+    ),
+    'primary key' => array('uid'),
+  );
   return $schema;
 }
 
@@ -74,4 +91,5 @@ function ueditor_install() {
  */
 function ueditor_uninstall() {
   variable_del('ueditor_global_settings');
+  variable_del('ueditor_image_settings');
 }

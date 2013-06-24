@@ -10,7 +10,6 @@
  *
  */
 
-
 /**
  * Implementation of hook_help().
  */
@@ -77,7 +76,20 @@ function ueditor_menu() {
     'access arguments'  => array('administer ueditor'),
     'type'              => MENU_NORMAL_ITEM,
   );  
-  
+  $items['admin/config/content/ueditor/gset/global'] = array(
+    'title' => 'Global',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+  $items['admin/config/content/ueditor/gset/image'] = array(
+    'title' => 'Image',
+    'description' => 'Configure the image param.',
+    'page callback'     => 'drupal_get_form',
+    'page arguments'    => array('ueditor_image_settings_form'),
+    'access arguments'  => array('administer ueditor'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 0,
+  );
   return $items;
 }
 
@@ -198,47 +210,6 @@ function ueditor_global_settings_form($form, $form_state) {
     '#default_value'  => $imagePath,
     '#description'    => $suggest.'Current path:<code>'._ueditor_realpath($imagePath).'</code>',
   );
-  $form['global_settings']['imageStyle'] = array(
-    '#type'           => 'checkbox',
-    '#title'          => t('Style image when upload'),
-    '#default_value'  => empty($settings['imageStyle']) ? FALSE : (boolean) $settings['imageStyle'],
-  );
-  $form['global_settings']['imageStyleDefault'] = array(
-    '#type'           => 'textfield',
-    '#title'          => t('Default style name'),
-    '#default_value'  => empty($settings['imageStyleDefault']) ? '' : $settings['imageStyleDefault'],
-    '#states' => array(
-      'visible' => array(
-        'input[name="imageStyle"]' => array('checked' => TRUE),
-      ),
-    ),
-  );
-  $form['global_settings']['imageStyleWatermark'] = array(
-    '#type'           => 'textfield',
-    '#title'          => t('Watermark style name'),
-    '#default_value'  => empty($settings['imageStyleWatermark']) ? '' : $settings['imageStyleWatermark'],
-    '#states' => array(
-      'visible' => array(
-        'input[name="imageStyle"]' => array('checked' => TRUE),
-      ),
-    ),
-  );
-  $form['global_settings']['imageManage'] = array(
-    '#type'           => 'checkbox',
-    '#title'          => t('Set manage image roles'),
-    '#default_value'  => empty($settings['imageManage']) ? FALSE : (boolean) $settings['imageManage'],
-  );
-  $form['global_settings']['imageManageRoles'] = array(
-    '#type'           => 'checkboxes',
-    '#title'          => t('Roles'),
-    '#options'        => user_roles(),
-    '#default_value'  => empty($settings['imageManageRoles']) ? array() : $settings['imageManageRoles'],
-    '#states' => array(
-      'visible' => array(
-        'input[name="imageManage"]' => array('checked' => TRUE),
-      ),
-    ),
-  );
   $scrawlPath = !empty($settings['scrawlPath']) ? $settings['scrawlPath'] : '%f/ueditor/';
   $form['global_settings']['scrawlPath'] = array(
     '#type'           => 'textfield',
@@ -294,54 +265,12 @@ function ueditor_global_settings_form($form, $form_state) {
   return $form;
 }
 
-/**
- * ueditor_global_settings_form validate handle
- */
-function ueditor_global_settings_form_validate($form, &$form_state) {
-  if ((boolean) $form_state['values']['imageStyle']) {
-    $styleDefault = trim($form_state['values']['imageStyleDefault']);
-    $styleWatermark = trim($form_state['values']['imageStyleWatermark']);
-    if (empty($styleDefault)) {
-      form_set_error('imageStyleDefault', t("Please input default style name !"));
-    }
-    else if (!image_style_load($styleDefault)) {
-      form_set_error('imageStyleDefault', t("Please input an exist <a target='_blank' href='/admin/config/media/image-styles'>imgae style</a> name on default style!"));
-    }
-
-    if (!empty($styleWatermark) && !image_style_load($styleWatermark)) {
-      form_set_error('imageStyleWatermark', t("Please input an exist <a target='_blank' href='/admin/config/media/image-styles'>imgae style</a> name watermark style!"));
-    }
-  }
-  else {
-    $styleDefault = '';
-    $styleWatermark = '';
-  }
-
-  if ((boolean) $form_state['values']['imageManage']) {
-    $manageRoles = array_filter($form_state['values']['imageManageRoles']);
-    if (empty($manageRoles)) {
-      form_set_error('imageManageRoles', t("Please set image manage roles !"));
-    }
-  }
-  else {
-    $manageRoles = array();
-  }
-  form_set_value($form['global_settings']['imageStyleDefault'], $styleDefault, $form_state);
-  form_set_value($form['global_settings']['imageStyleWatermark'], $styleWatermark, $form_state);
-  form_set_value($form['global_settings']['imageManageRoles'], $manageRoles, $form_state);
-}
-
 //@see ueditor_global_setting_form
 function ueditor_global_settings_form_submit($form, &$form_state) {
   $val = $form_state['values'];
   foreach( array('imagePath','scrawlPath','filePath','catcherPath','imageManagerPath','snapscreenPath','wordImagePath') as $k) {
     $val[$k] = _ueditor_realpath($val[$k], TRUE);
   }
-  $val['imageStyle'] = $form_state['values']['imageStyle'];
-  $val['imageStyleDefault'] = $form_state['values']['imageStyleDefault'];
-  $val['imageStyleWatermark'] = $form_state['values']['imageStyleWatermark'];
-  $val['imageManage'] = $form_state['values']['imageManage'];
-  $val['imageManageRoles'] = $form_state['values']['imageManageRoles'];
   $settings = ueditor_value_to_setting($val, FALSE);
   variable_set('ueditor_global_settings', $settings);
   drupal_set_message(t('Your changes have been saved.'));
@@ -709,7 +638,21 @@ function ueditor_load_by_field($field, $format) {
   if ($field['#id'] == "edit-log") return $field;
   if (isset($field['#attributes']['disabled']) && $field['#attributes']['disabled'] == 'disabled') return $field;
   $input_format = isset($format['#value']) ? $format['#value'] : $format['#default_value'];
-  drupal_add_js(array('ueditor' => array('default_format' => array($field['#id'] => $input_format), 'imce'=>module_exists('imce'))), 'setting');
+  drupal_add_js(
+    array(
+      'ueditor' => array(
+        'default_format' => array(
+          $field['#id'] => $input_format
+        ), 
+        'imce' => module_exists('imce'),
+        'image' => array(
+          'settings' => ueditor_get_image_settings(),
+          'watermarkAllowed' => ueditor_image_watermark_allowed_user(),
+        ),
+      )
+    ),
+    'setting'
+  );
   if(!$configs) $configs = ueditor_profile_load();
   if(!$is_running) {
     drupal_add_js('window.UEDITOR_HOME_URL = "'.base_path().drupal_get_path('module', 'ueditor').'/ueditor/";', array('scope'=>'footer', 'type'=>'inline'));  
@@ -808,8 +751,7 @@ function ueditor_file_interface($uptype=NULL) {
   $data     = array();
   switch($uptype) {
     case 'imageup_watermark':
-    var_dump($_POST);
-      variable_set('ueditor_imageup_watermark', $_POST['watermark']);
+      ueditor_image_set_user_config($_POST);
     break;
     case 'imageup':
       $data = $upload->setConfig(array('file_type'=>'image','saved_path'=>$settings['imagePath']))
@@ -931,4 +873,261 @@ function _ueditor_request_string($key) {
     }
   }
   return $req;
+}
+
+/**
+ * Default image config.
+ */
+function ueditor_image_config_default() {
+  $config = array();
+  $config['styleNeed'] = FALSE;
+  $config['styleDefault'] = '';
+  $config['watermarkNeed'] = FALSE;
+  $config['watermarkAllowedRoles'] = array();
+  $config['watermarkAllowedStyles'] = array();
+  $config['watermarkCustomStyleBase'] = '';
+  $config['manageNeed'] = FALSE;
+  $config['manageRoles'] = array();
+  return $config;
+}
+
+/**
+ * Get all image styles.
+ */
+function ueditor_get_all_image_styles() {
+  $styles = image_styles();
+  $data = array();
+  foreach ($styles as $key => $val) {
+    $data[$key] = $key;
+  }
+  return $data;
+}
+
+/**
+ * Form : config image.
+ */
+function ueditor_image_settings_form() {
+  $settings = ueditor_get_image_settings();
+  $styles = ueditor_get_all_image_styles();
+  $form['image_settings']['style'] = array(
+    '#type'         => 'fieldset',
+    '#title'        => t('Style'),
+    '#collapsible'  => TRUE,
+    '#collapsed'    => FALSE,
+  );
+  $form['image_settings']['style']['styleNeed'] = array(
+    '#type'           => 'checkbox',
+    '#title'          => t('Style image when upload'),
+    '#default_value'  => isset($settings['styleNeed']) ? $settings['styleNeed'] : FALSE,
+  );
+  $form['image_settings']['style']['styleDefault'] = array(
+    '#title'          => t('Default style'),
+    '#type'           => 'radios',
+    '#options'        => $styles,
+    '#default_value'  => isset($settings['styleDefault']) ? $settings['styleDefault'] : '',
+    '#states' => array(
+      'visible' => array(
+        'input[name="styleNeed"]' => array('checked' => TRUE),
+      ),
+    ),
+  );
+  $form['image_settings']['style']['watermarkNeed'] = array(
+    '#type'           => 'checkbox',
+    '#title'          => t('Allowed to add watermark'),
+    '#default_value'  => isset($settings['watermarkNeed']) ? $settings['watermarkNeed'] : FALSE,
+    '#states' => array(
+      'visible' => array(
+        'input[name="styleNeed"]' => array('checked' => TRUE),
+      ),
+    ),
+  );
+  $form['image_settings']['style']['watermarkDefaultText'] = array(
+    '#title'          => t('Default Text'),
+    '#type'           => 'textfield',
+    '#default_value'  => isset($settings['watermarkDefaultText']) ? $settings['watermarkDefaultText'] : '',
+    '#states' => array(
+      'visible' => array(
+        'input[name="styleNeed"]' => array('checked' => TRUE),
+        'input[name="watermarkNeed"]' => array('checked' => TRUE),
+      ),
+    ),
+  );
+  $form['image_settings']['style']['watermarkAllowedRoles'] = array(
+    '#title'          => t('Allowed watermark roles'),
+    '#type'           => 'checkboxes',
+    '#options'        => user_roles(),
+    '#default_value'  => is_array($settings['watermarkAllowedRoles']) ? $settings['watermarkAllowedRoles'] : array(),
+    '#states' => array(
+      'visible' => array(
+        'input[name="styleNeed"]' => array('checked' => TRUE),
+        'input[name="watermarkNeed"]' => array('checked' => TRUE),
+      ),
+    ),
+  );
+  $form['image_settings']['style']['watermarkAllowedStyles'] = array(
+    '#title'          => t('Allowed watermark style'),
+    '#type'           => 'checkboxes',
+    '#options'        => $styles,
+    '#default_value'  => is_array($settings['watermarkAllowedStyles']) ? $settings['watermarkAllowedStyles'] : array(),
+    '#states' => array(
+      'visible' => array(
+        'input[name="styleNeed"]' => array('checked' => TRUE),
+        'input[name="watermarkNeed"]' => array('checked' => TRUE),
+      ),
+    ),
+  );
+  $form['image_settings']['style']['watermarkCustomStyleBase'] = array(
+    '#title'          => t('Allowed watermark custom style base'),
+    '#type'           => 'radios',
+    '#options'        => $styles,
+    '#default_value'  => isset($settings['watermarkCustomStyleBase']) ? $settings['watermarkCustomStyleBase'] : '',
+    '#states' => array(
+      'visible' => array(
+        'input[name="styleNeed"]' => array('checked' => TRUE),
+        'input[name="watermarkNeed"]' => array('checked' => TRUE),
+      ),
+    ),
+  );
+  $form['image_settings']['manage'] = array(
+    '#type'         => 'fieldset',
+    '#title'        => t('Manage'),
+    '#collapsible'  => TRUE,
+    '#collapsed'    => FALSE,
+  );
+  $form['image_settings']['manage']['manageNeed'] = array(
+    '#type'           => 'checkbox',
+    '#title'          => t('Set manage image roles'),
+    '#default_value'  => isset($settings['manageNeed']) ? $settings['manageNeed'] : FALSE,
+  );
+  $form['image_settings']['manage']['manageRoles'] = array(
+    '#type'           => 'checkboxes',
+    '#title'          => t('Roles'),
+    '#options'        => user_roles(),
+    '#default_value'  => is_array($settings['manageRoles']) ? $settings['manageRoles'] : array(),
+    '#states' => array(
+      'visible' => array(
+        'input[name="manageNeed"]' => array('checked' => TRUE),
+      ),
+    ),
+  );
+  $form['image_settings']['submit'] = array(
+    '#type'           => 'submit',
+    '#value'          => t('Save'),
+  );
+  return $form;
+}
+
+/**
+ * ueditor_image_settings_form validate handle
+ */
+function ueditor_image_settings_form_validate($form, &$form_state) {
+  $styleDefault = $form_state['values']['styleDefault'];
+  $watermarkAllowedRoles = array_values(array_filter($form_state['values']['watermarkAllowedRoles']));
+  $watermarkAllowedStyles = array_values(array_filter($form_state['values']['watermarkAllowedStyles']));
+  $watermarkCustomStyleBase = $form_state['values']['watermarkCustomStyleBase'];
+  $manageRoles = array_values(array_filter($form_state['values']['manageRoles']));
+  $watermarkNeed = (boolean) $form_state['values']['watermarkNeed'];
+  if ((boolean) $form_state['values']['styleNeed']) {
+      if (empty($form_state['values']['styleDefault'])) {
+        form_set_error('styleNeed', t("Please set default style name !"));
+      }
+      if ($watermarkNeed) {
+        if (empty($watermarkAllowedRoles)) {
+          form_set_error('watermarkAllowedRoles', t("Please set watermark allowed roles !"));
+        }
+        if (empty($watermarkAllowedStyles)) {
+          form_set_error('watermarkAllowedStyles', t("Please set watermark allowed styles !"));
+        }
+      }
+      else {
+        $watermarkAllowedRoles = array();
+        $watermarkAllowedStyles = array();
+        $watermarkCustomStyleBase = '';
+      }
+  }
+  else {
+    $styleDefault = '';
+    $watermarkNeed = FALSE;
+    $watermarkAllowedRoles = array();
+    $watermarkAllowedStyles = array();
+    $watermarkCustomStyleBase = '';
+  }
+
+  if ((boolean) $form_state['values']['manageNeed']) {
+    if (empty($manageRoles)) {
+      form_set_error('manageRoles', t("Please set manage roles !"));
+    }
+  }
+  else {
+    $manageRoles = array();
+  }
+  form_set_value($form['image_settings']['style']['styleDefault'], $styleDefault, $form_state);
+  form_set_value($form['image_settings']['style']['watermarkNeed'], $watermarkNeed, $form_state);
+  form_set_value($form['image_settings']['style']['watermarkAllowedRoles'], $watermarkAllowedRoles, $form_state);
+  form_set_value($form['image_settings']['style']['watermarkAllowedStyles'], $watermarkAllowedStyles, $form_state);
+  form_set_value($form['image_settings']['style']['watermarkCustomStyleBase'], $watermarkCustomStyleBase, $form_state);
+  form_set_value($form['image_settings']['manage']['manageRoles'], $manageRoles, $form_state);
+}
+
+/**
+ * ueditor_image_settings_form submit handle
+ */
+function ueditor_image_settings_form_submit($form, &$form_state) {
+  $settings = array();
+  $settings['styleNeed'] = (boolean) $form_state['values']['styleNeed'];
+  $settings['styleDefault'] = $form_state['values']['styleDefault'];
+  $settings['watermarkNeed'] = $form_state['values']['watermarkNeed'];
+  $settings['watermarkDefaultText'] = $form_state['values']['watermarkDefaultText'];
+  $settings['watermarkAllowedRoles'] = $form_state['values']['watermarkAllowedRoles'];
+  $settings['watermarkAllowedStyles'] = $form_state['values']['watermarkAllowedStyles'];
+  $settings['watermarkCustomStyleBase'] = $form_state['values']['watermarkCustomStyleBase'];
+  $settings['manageNeed'] = (boolean) $form_state['values']['manageNeed'];
+  $settings['manageRoles'] = $form_state['values']['manageRoles'];
+  variable_set('ueditor_image_settings', serialize($settings));
+  drupal_set_message(t('Your changes have been saved.'));
+  $form_state['redirect'] = 'admin/config/content/ueditor';
+}
+
+/**
+ * Handle user access to watermark.
+ *
+ * @param $user
+ */
+function ueditor_image_watermark_allowed_user($user = NULL) {
+  $user = isset($user) ? $user : $GLOBALS['user'];
+  $settings = ueditor_get_image_settings();
+  $intersect = array_intersect(array_keys($user->roles), $settings['watermarkAllowedRoles']);
+  return empty($intersect) ? FALSE : TRUE;
+}
+
+function ueditor_get_image_settings() {
+  $settings = variable_get('ueditor_image_settings', NULL);
+  $settings = $settings ? unserialize($settings) : ueditor_image_config_default();
+  return $settings;
+}
+
+function ueditor_image_set_user_config($p) {
+  global $user;
+  $config = array();
+  $config['watermarkNeed'] = (boolean) $p['watermarkNeed'];
+  if ($config['watermarkNeed']) {
+    $config['watermarkType'] = $p['watermarkType'];
+    $config['watermarkSystem'] = $p['watermarkSystem'];
+    $config['watermarkCutomX'] = $p['watermarkCutomX'];
+    $config['watermarkCutomY'] = $p['watermarkCutomY'];
+    $config['watermarkCutomText'] = $p['watermarkCutomText'];
+  }
+  db_merge('ueditor_user_config')
+    ->key(array('uid' => $user->uid))
+    ->fields(array(
+      'uid' => $user->uid,
+      'config' => serialize($config),
+    ))
+    ->execute();
+}
+
+function ueditor_image_get_user_config($uid = NULL) {
+  $uid = isset($uid) ? $uid : $GLOBALS['user']->uid;
+  $ret = db_select('ueditor_user_config', 'uuc')->condition('uid', $uid)->fields('uuc', array('config'))->execute()->fetchObject();
+  return $ret ? unserialize($ret->config) : array();
 }
